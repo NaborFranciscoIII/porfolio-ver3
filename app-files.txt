@@ -1,0 +1,1478 @@
+--App.tsx--
+--Navigation.tsx--
+
+--AdminPage.tsx--
+import { useState, type ReactNode } from "react";
+import { useApp, PortfolioData, Project, ServiceCard, ServiceItem, SocialLink, SkillCategory, defaultData } from "../App";
+import {
+  Lock, LogOut, Home, FolderOpen, Briefcase, Mail, Plus, Trash2, Edit3, Check, X,
+  Save, RotateCcw, ChevronRight, Eye, EyeOff, AlertTriangle,
+} from "lucide-react";
+
+const DEFAULT_PASSWORD = "admin2025";
+
+// ─── Auth screen ──────────────────────────────────────────────────────────────
+
+function AuthScreen({ onAuth }: { onAuth: () => void }) {
+  const [pass, setPass] = useState("");
+  const [show, setShow] = useState(false);
+  const [err, setErr] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const stored = localStorage.getItem("pf-admin-pass") || DEFAULT_PASSWORD;
+    if (pass === stored) {
+      sessionStorage.setItem("pf-admin", "1");
+      onAuth();
+    } else {
+      setErr("Invalid credentials.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+      <div className="relative w-full max-w-sm mx-6">
+        <div className="bg-card border border-border rounded-2xl p-8 shadow-[0_0_40px_var(--glow)]">
+          <div className="flex flex-col items-center gap-3 mb-8">
+            <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
+              <Lock size={20} />
+            </div>
+            <div className="text-center">
+              <h1 className="font-bold text-lg">Admin Portal</h1>
+              <p className="text-xs font-mono text-muted-foreground mt-1">RESTRICTED ACCESS</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="relative">
+              <input
+                type={show ? "text" : "password"}
+                placeholder="Access password"
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+                className="w-full px-4 py-3 pr-10 border border-border rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 focus:shadow-[0_0_10px_var(--glow)] transition-all"
+                style={{ background: "var(--input-background)" }}
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShow((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {show ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+            {err && <p className="text-destructive text-xs font-mono">{err}</p>}
+            <button
+              type="submit"
+              className="py-3 bg-primary text-primary-foreground rounded-xl font-semibold text-sm hover:opacity-90 transition-all shadow-[0_0_12px_var(--glow)]"
+            >
+              Authenticate
+            </button>
+          </form>
+
+          <p className="mt-4 text-center text-xs text-muted-foreground/60 font-mono">
+            Default: admin2025
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Small helpers ────────────────────────────────────────────────────────────
+
+function SectionTitle({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-6">
+      <p className="font-mono text-xs tracking-widest text-primary uppercase font-semibold">{label}</p>
+      <div className="flex-1 border-t border-dashed border-border" />
+    </div>
+  );
+}
+
+function FieldLabel({ children }: { children: ReactNode }) {
+  return <label className="block text-xs font-mono text-muted-foreground mb-1.5 uppercase tracking-wide">{children}</label>;
+}
+
+function TextInput({
+  value,
+  onChange,
+  placeholder,
+  multiline = false,
+  rows = 3,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  rows?: number;
+}) {
+  const cls =
+    "w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 transition-all";
+  const bg = { background: "var(--input-background)" };
+  return multiline ? (
+    <textarea
+      rows={rows}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={cls + " resize-none"}
+      style={bg}
+    />
+  ) : (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={cls}
+      style={bg}
+    />
+  );
+}
+
+function TagsInput({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [input, setInput] = useState("");
+  const add = () => {
+    const t = input.trim();
+    if (t && !value.includes(t)) onChange([...value, t]);
+    setInput("");
+  };
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        {value.map((tag) => (
+          <span
+            key={tag}
+            className="flex items-center gap-1 px-2 py-0.5 bg-muted border border-border rounded-md text-xs font-mono"
+          >
+            {tag}
+            <button onClick={() => onChange(value.filter((t) => t !== tag))} className="text-muted-foreground hover:text-destructive transition-colors">
+              <X size={10} />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+          placeholder="Add tag + Enter"
+          className="flex-1 px-3 py-1.5 border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 transition-all"
+          style={{ background: "var(--input-background)" }}
+        />
+        <button onClick={add} className="px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs hover:bg-primary/20 transition-colors">
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StringListInput({ value, onChange, placeholder }: { value: string[]; onChange: (v: string[]) => void; placeholder?: string }) {
+  const [input, setInput] = useState("");
+  const add = () => {
+    const t = input.trim();
+    if (t) { onChange([...value, t]); setInput(""); }
+  };
+  return (
+    <div>
+      <div className="flex flex-col gap-1 mb-2">
+        {value.map((item, i) => (
+          <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg border border-border">
+            <span className="text-sm flex-1">{item}</span>
+            <button onClick={() => onChange(value.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive transition-colors">
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+          placeholder={placeholder || "Add item + Enter"}
+          className="flex-1 px-3 py-1.5 border border-border rounded-lg text-xs placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 transition-all"
+          style={{ background: "var(--input-background)" }}
+        />
+        <button onClick={add} className="px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs hover:bg-primary/20 transition-colors">
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tab: Home ────────────────────────────────────────────────────────────────
+
+function HomeTab() {
+  const { data, setData } = useApp();
+  const [home, setHome] = useState(() => JSON.parse(JSON.stringify(data.home)));
+  const [saved, setSaved] = useState(false);
+
+  const save = () => {
+    setData({ ...data, home });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const updateSkillList = (field: keyof typeof home.techSkills, value: string[]) => {
+    setHome((h: typeof home) => ({ ...h, techSkills: { ...h.techSkills, [field]: value } }));
+  };
+
+  const updateSkillCat = (
+    key: "vaSkills" | "adminRoleSkills",
+    idx: number,
+    updated: SkillCategory
+  ) => {
+    setHome((h: typeof home) => {
+      const arr = [...h[key]];
+      arr[idx] = updated;
+      return { ...h, [key]: arr };
+    });
+  };
+
+  const addSkillCat = (key: "vaSkills" | "adminRoleSkills") => {
+    setHome((h: typeof home) => ({
+      ...h,
+      [key]: [...h[key], { name: "New Category", skills: [] }],
+    }));
+  };
+
+  const removeSkillCat = (key: "vaSkills" | "adminRoleSkills", idx: number) => {
+    setHome((h: typeof home) => ({ ...h, [key]: h[key].filter((_: SkillCategory, i: number) => i !== idx) }));
+  };
+
+  return (
+    <div className="flex flex-col gap-8">
+      {/* Basic info */}
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <SectionTitle label="Basic Info" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <FieldLabel>Name</FieldLabel>
+            <TextInput value={home.name} onChange={(v) => setHome((h: typeof home) => ({ ...h, name: v }))} placeholder="Your name" />
+          </div>
+          <div>
+            <FieldLabel>Tagline</FieldLabel>
+            <TextInput value={home.tagline} onChange={(v) => setHome((h: typeof home) => ({ ...h, tagline: v }))} placeholder="Short tagline" />
+          </div>
+          <div className="md:col-span-2">
+            <FieldLabel>Profile Photo URL</FieldLabel>
+            <TextInput value={home.profilePhotoUrl} onChange={(v) => setHome((h: typeof home) => ({ ...h, profilePhotoUrl: v }))} placeholder="https://..." />
+          </div>
+          <div className="md:col-span-2">
+            <FieldLabel>Introduction Paragraph 1</FieldLabel>
+            <TextInput value={home.intro1} onChange={(v) => setHome((h: typeof home) => ({ ...h, intro1: v }))} multiline rows={3} />
+          </div>
+          <div className="md:col-span-2">
+            <FieldLabel>Introduction Paragraph 2</FieldLabel>
+            <TextInput value={home.intro2} onChange={(v) => setHome((h: typeof home) => ({ ...h, intro2: v }))} multiline rows={3} />
+          </div>
+        </div>
+      </div>
+
+      {/* Tech skills */}
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <SectionTitle label="Tech Skills" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {(["software", "languages", "frontend", "backend"] as const).map((field) => (
+            <div key={field}>
+              <FieldLabel>{field}</FieldLabel>
+              <StringListInput value={home.techSkills[field]} onChange={(v) => updateSkillList(field, v)} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* VA skills */}
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <SectionTitle label="Virtual Assistant Skills" />
+        <div className="flex flex-col gap-4">
+          {home.vaSkills.map((cat: SkillCategory, i: number) => (
+            <div key={i} className="border border-border rounded-xl p-4 bg-muted/30">
+              <div className="flex items-center gap-2 mb-3">
+                <TextInput value={cat.name} onChange={(v) => updateSkillCat("vaSkills", i, { ...cat, name: v })} placeholder="Category name" />
+                <button onClick={() => removeSkillCat("vaSkills", i)} className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <StringListInput value={cat.skills} onChange={(v) => updateSkillCat("vaSkills", i, { ...cat, skills: v })} placeholder="Add skill..." />
+            </div>
+          ))}
+          <button onClick={() => addSkillCat("vaSkills")} className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl text-sm hover:bg-primary/20 transition-colors w-fit">
+            <Plus size={14} /> Add Category
+          </button>
+        </div>
+      </div>
+
+      {/* Admin role skills */}
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <SectionTitle label="Administrative Skills" />
+        <div className="flex flex-col gap-4">
+          {home.adminRoleSkills.map((cat: SkillCategory, i: number) => (
+            <div key={i} className="border border-border rounded-xl p-4 bg-muted/30">
+              <div className="flex items-center gap-2 mb-3">
+                <TextInput value={cat.name} onChange={(v) => updateSkillCat("adminRoleSkills", i, { ...cat, name: v })} placeholder="Category name" />
+                <button onClick={() => removeSkillCat("adminRoleSkills", i)} className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <StringListInput value={cat.skills} onChange={(v) => updateSkillCat("adminRoleSkills", i, { ...cat, skills: v })} placeholder="Add skill..." />
+            </div>
+          ))}
+          <button onClick={() => addSkillCat("adminRoleSkills")} className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl text-sm hover:bg-primary/20 transition-colors w-fit">
+            <Plus size={14} /> Add Category
+          </button>
+        </div>
+      </div>
+
+      <SaveBar onSave={save} saved={saved} />
+    </div>
+  );
+}
+
+// ─── Tab: Projects ────────────────────────────────────────────────────────────
+
+function emptyProject(): Project {
+  return { id: Date.now().toString(), title: "", tags: [], description: "", repoUrl: "", imageUrl: "" };
+}
+
+function ProjectForm({ project, onChange, onRemove }: { project: Project; onChange: (p: Project) => void; onRemove: () => void }) {
+  return (
+    <div className="border border-border rounded-xl p-5 bg-muted/30 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-xs text-primary">{project.title || "Untitled Project"}</span>
+        <button onClick={onRemove} className="text-muted-foreground hover:text-destructive transition-colors">
+          <Trash2 size={14} />
+        </button>
+      </div>
+      <div>
+        <FieldLabel>Title</FieldLabel>
+        <TextInput value={project.title} onChange={(v) => onChange({ ...project, title: v })} placeholder="Project title" />
+      </div>
+      <div>
+        <FieldLabel>Image URL</FieldLabel>
+        <TextInput value={project.imageUrl || ""} onChange={(v) => onChange({ ...project, imageUrl: v })} placeholder="https://..." />
+      </div>
+      <div>
+        <FieldLabel>Tags</FieldLabel>
+        <TagsInput value={project.tags} onChange={(v) => onChange({ ...project, tags: v })} />
+      </div>
+      <div>
+        <FieldLabel>Description</FieldLabel>
+        <TextInput value={project.description} onChange={(v) => onChange({ ...project, description: v })} multiline rows={3} />
+      </div>
+      <div>
+        <FieldLabel>Repository URL</FieldLabel>
+        <TextInput value={project.repoUrl} onChange={(v) => onChange({ ...project, repoUrl: v })} placeholder="https://github.com/..." />
+      </div>
+    </div>
+  );
+}
+
+function ProjectsTab() {
+  const { data, setData } = useApp();
+  const [projects, setProjects] = useState(() => JSON.parse(JSON.stringify(data.projects)));
+  const [saved, setSaved] = useState(false);
+
+  const save = () => {
+    setData({ ...data, projects });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const updateList = (key: "milestones" | "explorations", idx: number, updated: Project) => {
+    setProjects((p: typeof projects) => {
+      const arr = [...p[key]];
+      arr[idx] = updated;
+      return { ...p, [key]: arr };
+    });
+  };
+
+  const removeItem = (key: "milestones" | "explorations", idx: number) => {
+    setProjects((p: typeof projects) => ({ ...p, [key]: p[key].filter((_: Project, i: number) => i !== idx) }));
+  };
+
+  const addItem = (key: "milestones" | "explorations") => {
+    setProjects((p: typeof projects) => ({ ...p, [key]: [...p[key], emptyProject()] }));
+  };
+
+  return (
+    <div className="flex flex-col gap-8">
+      {(["milestones", "explorations"] as const).map((key) => (
+        <div key={key} className="bg-card border border-border rounded-2xl p-6">
+          <SectionTitle label={key === "milestones" ? "Work & Academic Milestones" : "Personal Explorations & Tools"} />
+          <div className="flex flex-col gap-4">
+            {projects[key].map((p: Project, i: number) => (
+              <ProjectForm
+                key={p.id}
+                project={p}
+                onChange={(updated) => updateList(key, i, updated)}
+                onRemove={() => removeItem(key, i)}
+              />
+            ))}
+            <button
+              onClick={() => addItem(key)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl text-sm hover:bg-primary/20 transition-colors w-fit"
+            >
+              <Plus size={14} /> Add Project
+            </button>
+          </div>
+        </div>
+      ))}
+      <SaveBar onSave={save} saved={saved} />
+    </div>
+  );
+}
+
+// ─── Tab: Services ────────────────────────────────────────────────────────────
+
+function ServicesTab() {
+  const { data, setData } = useApp();
+  const [services, setServices] = useState(() => JSON.parse(JSON.stringify(data.services)));
+  const [saved, setSaved] = useState(false);
+
+  const save = () => {
+    setData({ ...data, services });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const updateCard = (idx: number, card: ServiceCard) => {
+    setServices((s: typeof services) => {
+      const arr = [...s.openToWork];
+      arr[idx] = card;
+      return { ...s, openToWork: arr };
+    });
+  };
+
+  const removeCard = (idx: number) => {
+    setServices((s: typeof services) => ({ ...s, openToWork: s.openToWork.filter((_: ServiceCard, i: number) => i !== idx) }));
+  };
+
+  const addCard = () => {
+    setServices((s: typeof services) => ({
+      ...s,
+      openToWork: [...s.openToWork, { id: Date.now().toString(), category: "", positions: [] }],
+    }));
+  };
+
+  const updateMenuItem = (idx: number, item: ServiceItem) => {
+    setServices((s: typeof services) => {
+      const arr = [...s.servicesMenu];
+      arr[idx] = item;
+      return { ...s, servicesMenu: arr };
+    });
+  };
+
+  const removeMenuItem = (idx: number) => {
+    setServices((s: typeof services) => ({ ...s, servicesMenu: s.servicesMenu.filter((_: ServiceItem, i: number) => i !== idx) }));
+  };
+
+  const addMenuItem = () => {
+    setServices((s: typeof services) => ({
+      ...s,
+      servicesMenu: [...s.servicesMenu, { id: Date.now().toString(), name: "", description: "", price: "" }],
+    }));
+  };
+
+  return (
+    <div className="flex flex-col gap-8">
+      {/* Open to Work */}
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <SectionTitle label="Open to Work" />
+        <div className="flex flex-col gap-4">
+          {services.openToWork.map((card: ServiceCard, i: number) => (
+            <div key={card.id} className="border border-border rounded-xl p-4 bg-muted/30 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs text-primary">{card.category || "Untitled"}</span>
+                <button onClick={() => removeCard(i)} className="text-muted-foreground hover:text-destructive transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <div>
+                <FieldLabel>Category</FieldLabel>
+                <TextInput value={card.category} onChange={(v) => updateCard(i, { ...card, category: v })} placeholder="e.g. Software Development" />
+              </div>
+              <div>
+                <FieldLabel>Job Positions</FieldLabel>
+                <StringListInput value={card.positions} onChange={(v) => updateCard(i, { ...card, positions: v })} placeholder="Add position..." />
+              </div>
+            </div>
+          ))}
+          <button onClick={addCard} className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl text-sm hover:bg-primary/20 transition-colors w-fit">
+            <Plus size={14} /> Add Work Card
+          </button>
+        </div>
+      </div>
+
+      {/* Services Menu */}
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <SectionTitle label="Services Menu" />
+        <div className="flex flex-col gap-4">
+          {services.servicesMenu.map((item: ServiceItem, i: number) => (
+            <div key={item.id} className="border border-border rounded-xl p-4 bg-muted/30 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs text-primary">{item.name || "Untitled"}</span>
+                <button onClick={() => removeMenuItem(i)} className="text-muted-foreground hover:text-destructive transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel>Service Name</FieldLabel>
+                  <TextInput value={item.name} onChange={(v) => updateMenuItem(i, { ...item, name: v })} placeholder="Service name" />
+                </div>
+                <div>
+                  <FieldLabel>Price / Rate (optional)</FieldLabel>
+                  <TextInput value={item.price || ""} onChange={(v) => updateMenuItem(i, { ...item, price: v })} placeholder="e.g. $50/hr" />
+                </div>
+                <div className="md:col-span-2">
+                  <FieldLabel>Description</FieldLabel>
+                  <TextInput value={item.description} onChange={(v) => updateMenuItem(i, { ...item, description: v })} multiline rows={2} />
+                </div>
+              </div>
+            </div>
+          ))}
+          <button onClick={addMenuItem} className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl text-sm hover:bg-primary/20 transition-colors w-fit">
+            <Plus size={14} /> Add Service
+          </button>
+        </div>
+      </div>
+
+      <SaveBar onSave={save} saved={saved} />
+    </div>
+  );
+}
+
+// ─── Tab: Contacts ────────────────────────────────────────────────────────────
+
+const ICON_OPTIONS = ["github", "linkedin", "facebook", "twitter", "instagram", "email", "globe"];
+
+function ContactsTab() {
+  const { data, setData } = useApp();
+  const [contacts, setContacts] = useState(() => JSON.parse(JSON.stringify(data.contacts)));
+  const [saved, setSaved] = useState(false);
+
+  const save = () => {
+    setData({ ...data, contacts });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const updateLink = (idx: number, link: SocialLink) => {
+    setContacts((c: typeof contacts) => {
+      const arr = [...c.socialLinks];
+      arr[idx] = link;
+      return { ...c, socialLinks: arr };
+    });
+  };
+
+  const removeLink = (idx: number) => {
+    setContacts((c: typeof contacts) => ({ ...c, socialLinks: c.socialLinks.filter((_: SocialLink, i: number) => i !== idx) }));
+  };
+
+  const addLink = () => {
+    setContacts((c: typeof contacts) => ({
+      ...c,
+      socialLinks: [...c.socialLinks, { id: Date.now().toString(), name: "", url: "", icon: "globe" }],
+    }));
+  };
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <SectionTitle label="Social Media Links" />
+        <div className="flex flex-col gap-4">
+          {contacts.socialLinks.map((link: SocialLink, i: number) => (
+            <div key={link.id} className="border border-border rounded-xl p-4 bg-muted/30 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs text-primary">{link.name || "Untitled"}</span>
+                <button onClick={() => removeLink(i)} className="text-muted-foreground hover:text-destructive transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <FieldLabel>Display Name</FieldLabel>
+                  <TextInput value={link.name} onChange={(v) => updateLink(i, { ...link, name: v })} placeholder="e.g. GitHub" />
+                </div>
+                <div>
+                  <FieldLabel>Icon</FieldLabel>
+                  <select
+                    value={link.icon}
+                    onChange={(e) => updateLink(i, { ...link, icon: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary/60 transition-all capitalize"
+                    style={{ background: "var(--input-background)", color: "var(--foreground)" }}
+                  >
+                    {ICON_OPTIONS.map((ico) => (
+                      <option key={ico} value={ico}>{ico}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <FieldLabel>URL</FieldLabel>
+                  <TextInput value={link.url} onChange={(v) => updateLink(i, { ...link, url: v })} placeholder="https://..." />
+                </div>
+              </div>
+            </div>
+          ))}
+          <button onClick={addLink} className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl text-sm hover:bg-primary/20 transition-colors w-fit">
+            <Plus size={14} /> Add Social Link
+          </button>
+        </div>
+      </div>
+
+      <SaveBar onSave={save} saved={saved} />
+    </div>
+  );
+}
+
+// ─── Save Bar ─────────────────────────────────────────────────────────────────
+
+function SaveBar({ onSave, saved }: { onSave: () => void; saved: boolean }) {
+  return (
+    <div className="flex justify-end">
+      <button
+        onClick={onSave}
+        className={[
+          "flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all",
+          saved
+            ? "bg-green-500/20 text-green-400 border border-green-500/30"
+            : "bg-primary text-primary-foreground shadow-[0_0_12px_var(--glow)] hover:opacity-90",
+        ].join(" ")}
+      >
+        {saved ? <><Check size={15} /> Saved!</> : <><Save size={15} /> Save Changes</>}
+      </button>
+    </div>
+  );
+}
+
+// ─── Admin page ───────────────────────────────────────────────────────────────
+
+type TabId = "home" | "projects" | "services" | "contacts";
+
+const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
+  { id: "home", label: "Home", icon: <Home size={15} /> },
+  { id: "projects", label: "Projects", icon: <FolderOpen size={15} /> },
+  { id: "services", label: "Services", icon: <Briefcase size={15} /> },
+  { id: "contacts", label: "Contacts", icon: <Mail size={15} /> },
+];
+
+export default function AdminPage() {
+  const { adminAuthed, setAdminAuthed, navigate, data, setData } = useApp();
+  const [tab, setTab] = useState<TabId>("home");
+  const [showReset, setShowReset] = useState(false);
+
+  if (!adminAuthed) {
+    return <AuthScreen onAuth={() => setAdminAuthed(true)} />;
+  }
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("pf-admin");
+    setAdminAuthed(false);
+    navigate("home");
+  };
+
+  const handleReset = () => {
+    setData(defaultData);
+    setShowReset(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+
+      {/* Admin header */}
+      <div className="relative sticky top-0 z-50 backdrop-blur-md border-b border-border" style={{ background: "color-mix(in srgb, var(--background) 90%, transparent)" }}>
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="font-mono text-sm font-semibold text-primary tracking-widest">ADMIN PANEL</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("home")}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-muted-foreground hover:text-foreground border border-border hover:border-primary/40 rounded-lg transition-all"
+            >
+              <Eye size={12} /> View Site
+            </button>
+            <button
+              onClick={() => setShowReset(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-muted-foreground hover:text-destructive border border-border hover:border-destructive/40 rounded-lg transition-all"
+            >
+              <RotateCcw size={12} /> Reset
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-muted-foreground hover:text-foreground border border-border rounded-lg hover:bg-muted transition-all"
+            >
+              <LogOut size={12} /> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative max-w-6xl mx-auto px-6 py-10">
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 bg-card border border-border rounded-xl mb-8 w-fit">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={[
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                tab === t.id
+                  ? "bg-primary text-primary-foreground shadow-[0_0_10px_var(--glow)]"
+                  : "text-muted-foreground hover:text-foreground",
+              ].join(" ")}
+            >
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "home" && <HomeTab />}
+        {tab === "projects" && <ProjectsTab />}
+        {tab === "services" && <ServicesTab />}
+        {tab === "contacts" && <ContactsTab />}
+      </div>
+
+      {/* Reset confirm modal */}
+      {showReset && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl p-7 max-w-sm w-full mx-6 shadow-[0_0_40px_var(--glow)]">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle size={20} className="text-destructive" />
+              <h3 className="font-semibold">Reset All Data?</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-6">
+              This will restore all portfolio content to the default values. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowReset(false)}
+                className="flex-1 py-2 border border-border rounded-xl text-sm hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReset}
+                className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-all"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+--ContactPage.tsx--
+import { useState, type ReactNode } from "react";
+import { useApp, SocialLink } from "../App";
+import { Github, Linkedin, Facebook, Twitter, Instagram, Globe, Mail, ArrowUpRight, Send, CheckCircle } from "lucide-react";
+
+const ICON_MAP: Record<string, ReactNode> = {
+  github: <Github size={18} />,
+  linkedin: <Linkedin size={18} />,
+  facebook: <Facebook size={18} />,
+  twitter: <Twitter size={18} />,
+  instagram: <Instagram size={18} />,
+  email: <Mail size={18} />,
+  globe: <Globe size={18} />,
+};
+
+function SocialCard({ link }: { link: SocialLink }) {
+  const icon = ICON_MAP[link.icon.toLowerCase()] ?? <Globe size={18} />;
+
+  return (
+    <a
+      href={link.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl hover:border-primary/40 hover:shadow-[0_0_16px_var(--glow)] transition-all duration-200 group"
+    >
+      <span className="text-primary">{icon}</span>
+      <span className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">
+        {link.name}
+      </span>
+      <ArrowUpRight size={14} className="ml-auto text-muted-foreground group-hover:text-primary transition-colors" />
+    </a>
+  );
+}
+
+export default function ContactPage() {
+  const { data } = useApp();
+  const { contacts } = data;
+
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+      setError("All fields are required.");
+      return;
+    }
+    setError("");
+    setSending(true);
+    // Simulate email dispatch
+    await new Promise((r) => setTimeout(r, 1200));
+    setSending(false);
+    setSent(true);
+    setForm({ name: "", email: "", message: "" });
+  };
+
+  return (
+    <div className="pt-16 min-h-screen">
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+
+      <div className="relative max-w-6xl mx-auto px-6 py-16">
+        <div className="mb-14 text-center">
+          <p className="font-mono text-xs tracking-widest text-primary uppercase mb-3">COMMUNICATION HUB</p>
+          <h1 className="text-4xl font-bold">Get In Touch</h1>
+        </div>
+
+        {/* Contact form */}
+        <section className="mb-16 max-w-2xl mx-auto">
+          <div className="bg-card border border-border rounded-2xl p-8 shadow-[0_0_40px_var(--glow)]">
+            {sent ? (
+              <div className="flex flex-col items-center gap-4 py-8 text-center">
+                <CheckCircle size={48} className="text-primary" />
+                <h3 className="text-lg font-semibold">Inquiry Dispatched!</h3>
+                <p className="text-sm text-muted-foreground">Thanks for reaching out. I'll get back to you soon.</p>
+                <button
+                  onClick={() => setSent(false)}
+                  className="mt-2 px-5 py-2 bg-muted text-sm rounded-lg hover:bg-muted/80 transition-colors"
+                >
+                  Send Another
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    className="w-full px-4 py-3 bg-input-background border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 focus:shadow-[0_0_10px_var(--glow)] transition-all"
+                    style={{ background: "var(--input-background)" }}
+                  />
+                </div>
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Email Address"
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    className="w-full px-4 py-3 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 focus:shadow-[0_0_10px_var(--glow)] transition-all"
+                    style={{ background: "var(--input-background)" }}
+                  />
+                </div>
+                <div>
+                  <textarea
+                    placeholder="Message content..."
+                    value={form.message}
+                    onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+                    rows={5}
+                    className="w-full px-4 py-3 border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 focus:shadow-[0_0_10px_var(--glow)] transition-all resize-none"
+                    style={{ background: "var(--input-background)" }}
+                  />
+                </div>
+
+                {error && <p className="text-destructive text-xs font-mono">{error}</p>}
+
+                <button
+                  type="submit"
+                  disabled={sending}
+                  className="flex items-center justify-center gap-2 w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-all shadow-[0_0_16px_var(--glow)]"
+                >
+                  {sending ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      Dispatching...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={15} />
+                      Dispatch Inquiry
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
+        </section>
+
+        {/* Social links */}
+        <section className="max-w-2xl mx-auto">
+          <div className="flex items-center gap-4 mb-6">
+            <p className="font-mono text-xs tracking-widest text-primary uppercase font-semibold">
+              EXTERNAL DIRECTORIES
+            </p>
+            <div className="flex-1 border-t border-dashed border-border" />
+          </div>
+
+          {contacts.socialLinks.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {contacts.socialLinks.map((link) => (
+                <SocialCard key={link.id} link={link} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground font-mono text-center py-8">
+              No social links configured.
+            </p>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+--HomePage.tsx--
+import { type ReactNode } from "react";
+import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { useApp, Role } from "../App";
+import { Monitor, Headset, Briefcase, ChevronRight } from "lucide-react";
+
+const ROLE_OPTIONS: { id: Role; label: string; icon: ReactNode; desc: string }[] = [
+  { id: "tech", label: "Tech", icon: <Monitor size={15} />, desc: "Developer & Engineer" },
+  { id: "va", label: "Virtual Assistant", icon: <Headset size={15} />, desc: "Remote Support" },
+  { id: "admin-role", label: "Administrative", icon: <Briefcase size={15} />, desc: "Operations & Admin" },
+];
+
+const SKILL_COLORS: Record<string, string> = {
+  // software
+  "MS Word": "#2b5fbe",
+  "MS Excel": "#1a7f3c",
+  "MS PowerPoint": "#c43e1c",
+  "Cisco Packet Tracer": "#1a9cc3",
+  "Visual Studio Code": "#007acc",
+  "Git": "#f05032",
+  // languages
+  Python: "#3572a5",
+  Java: "#b07219",
+  "C++": "#f34b7d",
+  // frontend
+  HTML: "#e34c26",
+  CSS: "#264de4",
+  JavaScript: "#f1e05a",
+  // backend
+  "MySQL / SQLite": "#00758f",
+  Laravel: "#ff2d20",
+  PHP: "#4f5d95",
+};
+
+function SkillDot({ name }: { name: string }) {
+  const color = SKILL_COLORS[name] || "#64748b";
+  return (
+    <div className="flex items-center gap-2 py-1">
+      <span
+        className="w-2 h-2 rounded-full flex-shrink-0"
+        style={{ background: color, boxShadow: `0 0 5px ${color}80` }}
+      />
+      <span className="text-sm text-foreground">{name}</span>
+    </div>
+  );
+}
+
+function SkillBox({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="bg-card border border-border rounded-xl p-5 hover:border-primary/40 hover:shadow-[0_0_20px_var(--glow)] transition-all duration-300">
+      <p className="font-mono text-xs font-semibold text-primary tracking-widest uppercase mb-4">{title}</p>
+      <div className="flex flex-col">
+        {items.map((item) => (
+          <SkillDot key={item} name={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CategorySkillBox({ name, skills }: { name: string; skills: string[] }) {
+  return (
+    <div className="bg-card border border-border rounded-xl p-5 hover:border-primary/40 hover:shadow-[0_0_20px_var(--glow)] transition-all duration-300">
+      <p className="font-mono text-xs font-semibold text-primary tracking-widest uppercase mb-4">{name}</p>
+      <div className="flex flex-wrap gap-2">
+        {skills.map((skill) => (
+          <span
+            key={skill}
+            className="px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-muted-foreground border border-border"
+          >
+            {skill}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function HomePage() {
+  const { role, setRole, data } = useApp();
+  const { home } = data;
+
+  return (
+    <div className="pt-16 min-h-screen">
+      {/* Grid background */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+
+      <div className="relative max-w-6xl mx-auto px-6 py-16">
+        {/* Role toggle */}
+        <div className="flex items-center gap-1 mb-14 p-1 bg-card border border-border rounded-xl w-fit shadow-sm">
+          {ROLE_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => setRole(opt.id)}
+              className={[
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                role === opt.id
+                  ? "bg-primary text-primary-foreground shadow-[0_0_12px_var(--glow)]"
+                  : "text-muted-foreground hover:text-foreground",
+              ].join(" ")}
+            >
+              {opt.icon}
+              <span>{opt.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Introduction */}
+        <section className="mb-20">
+          <p className="font-mono text-xs tracking-widest text-primary uppercase mb-4">INTRODUCTION</p>
+
+          <div className="flex flex-col-reverse md:flex-row md:items-start gap-10">
+            <div className="flex-1">
+              <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+                Hello, I&apos;m{" "}
+                <span
+                  className="underline decoration-primary underline-offset-4"
+                  style={{ textShadow: "0 0 30px var(--glow)" }}
+                >
+                  {home.name}
+                </span>
+              </h1>
+
+              {role === "tech" && (
+                <>
+                  <p className="text-muted-foreground leading-relaxed mb-4">{home.intro1}</p>
+                  <p className="text-muted-foreground leading-relaxed">{home.intro2}</p>
+                </>
+              )}
+
+              {role === "va" && (
+                <>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    I provide reliable and efficient virtual assistance services, helping businesses and professionals
+                    streamline their daily operations, manage communications, and maintain organized workflows remotely.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    With strong organizational skills and a tech-forward mindset, I bring adaptability, attention to
+                    detail, and proactive support to every client engagement.
+                  </p>
+                </>
+              )}
+
+              {role === "admin-role" && (
+                <>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    I bring structured administrative expertise to organizations seeking efficient operations management.
+                    From coordinating cross-functional teams to developing standard operating procedures and tracking
+                    performance metrics.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    My background in Computer Science combined with administrative experience equips me to bridge the
+                    gap between technical systems and organizational workflows.
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Profile photo */}
+            <div className="flex-shrink-0 flex justify-center md:justify-end">
+              <div
+                className="w-44 h-52 md:w-52 md:h-64 rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_var(--glow)]"
+                style={{ background: "var(--card)" }}
+              >
+                {home.profilePhotoUrl ? (
+                  <ImageWithFallback
+                    src={home.profilePhotoUrl}
+                    alt={`${home.name} - Profile Photo`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted">
+                    <div
+                      className="w-16 h-16 rounded-full border-2 border-primary/40 flex items-center justify-center text-2xl font-bold text-primary"
+                      style={{ boxShadow: "0 0 20px var(--glow)" }}
+                    >
+                      {home.name.charAt(0)}
+                    </div>
+                    <span className="text-xs text-muted-foreground font-mono">Profile Photo</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Skills section */}
+        <section>
+          <div className="flex items-center gap-4 mb-8">
+            <p className="font-mono text-xs tracking-widest text-primary uppercase">
+              {role === "tech" ? "TECHNICAL MATRIX" : role === "va" ? "VIRTUAL ASSISTANT SKILLS" : "ADMINISTRATIVE SKILLS"}
+            </p>
+            <div className="flex-1 border-t border-dashed border-border" />
+          </div>
+
+          {role === "tech" && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <SkillBox title="Software" items={home.techSkills.software} />
+              <SkillBox title="Languages" items={home.techSkills.languages} />
+              <SkillBox title="Frontend" items={home.techSkills.frontend} />
+              <SkillBox title="Backend" items={home.techSkills.backend} />
+            </div>
+          )}
+
+          {role === "va" && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {home.vaSkills.map((cat) => (
+                <CategorySkillBox key={cat.name} name={cat.name} skills={cat.skills} />
+              ))}
+            </div>
+          )}
+
+          {role === "admin-role" && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {home.adminRoleSkills.map((cat) => (
+                <CategorySkillBox key={cat.name} name={cat.name} skills={cat.skills} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* CTA strip */}
+        <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a
+            href="#projects"
+            onClick={(e) => { e.preventDefault(); window.location.hash = "#projects"; }}
+            className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm hover:opacity-90 transition-all shadow-[0_0_16px_var(--glow)]"
+          >
+            View Projects <ChevronRight size={16} />
+          </a>
+          <a
+            href="#contact"
+            onClick={(e) => { e.preventDefault(); window.location.hash = "#contact"; }}
+            className="flex items-center gap-2 px-6 py-3 bg-card border border-border rounded-xl font-medium text-sm hover:border-primary/40 transition-all"
+          >
+            Get In Touch
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+--ProjectPage.tsx--
+import { useState, type ReactNode } from "react";
+import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { useApp, Project } from "../App";
+import { ExternalLink, BookMarked, Wrench, Image as ImageIcon } from "lucide-react";
+
+function TagPill({ label }: { label: string }) {
+  return (
+    <span className="px-2 py-0.5 rounded-md bg-muted border border-border text-xs font-mono text-muted-foreground">
+      {label}
+    </span>
+  );
+}
+
+function ProjectCard({ project }: { project: Project }) {
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-[0_0_24px_var(--glow)] transition-all duration-300 flex flex-col">
+      {/* Image */}
+      <div className="w-full h-44 bg-muted flex items-center justify-center overflow-hidden">
+        {project.imageUrl ? (
+          <ImageWithFallback
+            src={project.imageUrl}
+            alt={project.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-muted-foreground/40">
+            <ImageIcon size={32} />
+            <span className="text-xs font-mono">No preview</span>
+          </div>
+        )}
+      </div>
+
+      <div className="p-5 flex flex-col flex-1">
+        <h3 className="font-semibold text-base text-foreground mb-3 leading-snug">{project.title}</h3>
+
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {project.tags.map((tag) => (
+            <TagPill key={tag} label={tag} />
+          ))}
+        </div>
+
+        <p className="text-sm text-muted-foreground leading-relaxed flex-1 mb-5">{project.description}</p>
+
+        <a
+          href={project.repoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-accent font-medium transition-colors group"
+        >
+          Repository <ExternalLink size={13} className="group-hover:translate-x-0.5 transition-transform" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({
+  icon,
+  label,
+}: {
+  icon: ReactNode;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 mb-8">
+      <span className="text-primary">{icon}</span>
+      <p className="font-mono text-xs tracking-widest text-primary uppercase font-semibold">{label}</p>
+      <div className="flex-1 border-t border-dashed border-border" />
+    </div>
+  );
+}
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="col-span-full flex flex-col items-center gap-3 py-16 text-muted-foreground/40">
+      <div className="w-16 h-16 rounded-2xl border border-dashed border-border flex items-center justify-center">
+        <BookMarked size={24} />
+      </div>
+      <p className="text-sm font-mono">{label}</p>
+    </div>
+  );
+}
+
+export default function ProjectsPage() {
+  const { data } = useApp();
+  const { projects } = data;
+
+  return (
+    <div className="pt-16 min-h-screen">
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+
+      <div className="relative max-w-6xl mx-auto px-6 py-16">
+        <div className="mb-12">
+          <p className="font-mono text-xs tracking-widest text-primary uppercase mb-3">SHOWROOM</p>
+          <h1 className="text-4xl font-bold">Engineered Applications</h1>
+        </div>
+
+        {/* Work & Academic Milestones */}
+        <section className="mb-16">
+          <SectionHeader icon={<BookMarked size={14} />} label="WORK & ACADEMIC MILESTONES" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.milestones.length > 0 ? (
+              projects.milestones.map((p) => <ProjectCard key={p.id} project={p} />)
+            ) : (
+              <EmptyState label="No milestones added yet" />
+            )}
+          </div>
+        </section>
+
+        {/* Personal Explorations & Tools */}
+        <section>
+          <SectionHeader icon={<Wrench size={14} />} label="PERSONAL EXPLORATIONS & TOOLS" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.explorations.length > 0 ? (
+              projects.explorations.map((p) => <ProjectCard key={p.id} project={p} />)
+            ) : (
+              <EmptyState label="No explorations added yet" />
+            )}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+--ServicePage.tsx--
+import { useState, type ReactNode } from "react";
+import { useApp, ServiceCard, ServiceItem } from "../App";
+import { ChevronDown, ChevronUp, Briefcase, Layers, Plus } from "lucide-react";
+
+function OpenToWorkCard({ card }: { card: ServiceCard }) {
+  const [expanded, setExpanded] = useState(false);
+  const showToggle = card.positions.length > 3;
+  const visible = expanded ? card.positions : card.positions.slice(0, 3);
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-6 hover:border-primary/40 hover:shadow-[0_0_20px_var(--glow)] transition-all duration-300">
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <h3 className="font-semibold text-base text-foreground">{card.category}</h3>
+        <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-mono rounded-md border border-primary/20">
+          Open
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        {visible.map((pos, i) => (
+          <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary/60 flex-shrink-0" />
+            {pos}
+          </div>
+        ))}
+      </div>
+
+      {showToggle && (
+        <button
+          onClick={() => setExpanded((e) => !e)}
+          className="mt-4 flex items-center gap-1.5 text-xs font-mono text-primary hover:text-accent transition-colors"
+        >
+          {expanded ? (
+            <><ChevronUp size={12} /> Show less</>
+          ) : (
+            <><ChevronDown size={12} /> +{card.positions.length - 3} more positions</>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ServiceItemCard({ item }: { item: ServiceItem }) {
+  return (
+    <div className="bg-card border border-border rounded-2xl p-6 hover:border-primary/40 hover:shadow-[0_0_20px_var(--glow)] transition-all duration-300">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <h3 className="font-semibold text-base text-foreground">{item.name}</h3>
+        {item.price && (
+          <span className="px-2.5 py-0.5 bg-accent/10 text-accent text-xs font-mono rounded-md border border-accent/20 flex-shrink-0">
+            {item.price}
+          </span>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+    </div>
+  );
+}
+
+function SectionHeader({ icon, label }: { icon: ReactNode; label: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-8">
+      <span className="text-primary">{icon}</span>
+      <p className="font-mono text-xs tracking-widest text-primary uppercase font-semibold">{label}</p>
+      <div className="flex-1 border-t border-dashed border-border" />
+    </div>
+  );
+}
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="col-span-full flex flex-col items-center gap-3 py-16 text-muted-foreground/40">
+      <div className="w-16 h-16 rounded-2xl border border-dashed border-border flex items-center justify-center">
+        <Plus size={24} />
+      </div>
+      <p className="text-sm font-mono">{label}</p>
+    </div>
+  );
+}
+
+export default function ServicesPage() {
+  const { data } = useApp();
+  const { services } = data;
+
+  return (
+    <div className="pt-16 min-h-screen">
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+
+      <div className="relative max-w-6xl mx-auto px-6 py-16">
+        <div className="mb-12">
+          <p className="font-mono text-xs tracking-widest text-primary uppercase mb-3">OFFERINGS</p>
+          <h1 className="text-4xl font-bold">Services & Availability</h1>
+        </div>
+
+        {/* Open to Work */}
+        <section className="mb-16">
+          <SectionHeader icon={<Briefcase size={14} />} label="OPEN TO WORK" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {services.openToWork.length > 0 ? (
+              services.openToWork.map((card) => <OpenToWorkCard key={card.id} card={card} />)
+            ) : (
+              <EmptyState label="No positions listed yet" />
+            )}
+          </div>
+        </section>
+
+        {/* Services Menu */}
+        <section>
+          <SectionHeader icon={<Layers size={14} />} label="SERVICES MENU" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {services.servicesMenu.length > 0 ? (
+              services.servicesMenu.map((item) => <ServiceItemCard key={item.id} item={item} />)
+            ) : (
+              <EmptyState label="No services listed yet" />
+            )}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}

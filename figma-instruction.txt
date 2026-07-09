@@ -1,0 +1,36 @@
+Make me a Modern and Responsive Portfolio Website with 5 Pages, one is hidden with a secret URL
+
+Home Page Can be toggled based on roles; Tech, Virtual Assistant, and Administrative Roles Section 1: Introduction
+
+A header for short introduction
+2 paragraph body introducing myself
+Profile Picture Section 2: Technical Skills
+For Tech Side, there are 4 categories: Software, Languages, Frontend, and Backend
+Projects Page Section 1: Work & Academic Milestones | Can be empty (Create temporary placeholders) Section 2: Personal Explorations & Tools | Can be empty (Create temporary placeholders) Both uses card design. Displays Title of the Project, Photos, Sub Categories ( ex. Python, React, Vite, Tauri ), a short paragraph explaining the project, and repository link.
+
+Services Page Section 1: Open to Work | Can be empty (Create temporary placeholders)
+
+Use card layout designs. Each card will signify one category with multiple job positions. Can be extended when tapped/clicked if card has too much content. Section 2: Services Menu | Can be empty (Create temporary placeholders)
+Contacts Page Section 1: Contact Form
+
+Contains textbox for Full Name, email, and message content. This will be sent to a personal email. Section 2: Social Media Links
+Layput ex; LinkedIn
+When clicked, directs to a certain site
+Administrator Page (hidden url with authentication)
+
+Can add, edit, or remove;
+Home Page Section 1 and 2
+Projects Page Section 1 and 2
+Services Page Section 1 and 2
+Contacts Page Section 2
+Overall Design
+
+Light and Dark Mode Toggle
+Navigation for all pages except Administrator Page
+Use border color, shadow box, gradients and other modern concept designs for creativity
+Portfolio has a tech atmosphere to it.
+For Code:
+
+Use modular layout for each file
+Each Page must be on one file
+I sent my current portfolio website via images as a reference.
