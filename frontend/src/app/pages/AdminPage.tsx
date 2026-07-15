@@ -285,6 +285,10 @@ function HomeTab() {
         tagline: home.tagline,
         intro1: home.intro1,
         intro2: home.intro2,
+        va_intro1: home.vaIntro1,
+        va_intro2: home.vaIntro2,
+        admin_intro1: home.adminIntro1,
+        admin_intro2: home.adminIntro2,
         profile_photo_url: home.profilePhotoUrl,
         tech_skills: home.techSkills,
         va_skills: home.vaSkills,
@@ -382,13 +386,31 @@ function HomeTab() {
             </div>
           </div>
 
-          <div className="md:col-span-2 mt-2">
-            <FieldLabel>Introduction Paragraph 1</FieldLabel>
+          <div className="md:col-span-2 mt-4 pt-4 border-t border-border">
+            <p className="text-xs font-mono text-primary mb-3">TECH ROLE INTRO</p>
+            <FieldLabel>Paragraph 1</FieldLabel>
             <TextInput value={home.intro1} onChange={(v) => setHome((h: typeof home) => ({ ...h, intro1: v }))} multiline rows={3} />
-          </div>
-          <div className="md:col-span-2">
-            <FieldLabel>Introduction Paragraph 2</FieldLabel>
+            <div className="mt-2" />
+            <FieldLabel>Paragraph 2</FieldLabel>
             <TextInput value={home.intro2} onChange={(v) => setHome((h: typeof home) => ({ ...h, intro2: v }))} multiline rows={3} />
+          </div>
+
+          <div className="md:col-span-2 mt-4 pt-4 border-t border-border">
+            <p className="text-xs font-mono text-primary mb-3">VIRTUAL ASSISTANT INTRO</p>
+            <FieldLabel>Paragraph 1</FieldLabel>
+            <TextInput value={home.vaIntro1} onChange={(v) => setHome((h: typeof home) => ({ ...h, vaIntro1: v }))} multiline rows={3} />
+            <div className="mt-2" />
+            <FieldLabel>Paragraph 2</FieldLabel>
+            <TextInput value={home.vaIntro2} onChange={(v) => setHome((h: typeof home) => ({ ...h, vaIntro2: v }))} multiline rows={3} />
+          </div>
+
+          <div className="md:col-span-2 mt-4 pt-4 border-t border-border">
+            <p className="text-xs font-mono text-primary mb-3">ADMINISTRATIVE INTRO</p>
+            <FieldLabel>Paragraph 1</FieldLabel>
+            <TextInput value={home.adminIntro1} onChange={(v) => setHome((h: typeof home) => ({ ...h, adminIntro1: v }))} multiline rows={3} />
+            <div className="mt-2" />
+            <FieldLabel>Paragraph 2</FieldLabel>
+            <TextInput value={home.adminIntro2} onChange={(v) => setHome((h: typeof home) => ({ ...h, adminIntro2: v }))} multiline rows={3} />
           </div>
         </div>
       </div>

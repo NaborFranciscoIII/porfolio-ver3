@@ -151,28 +151,15 @@ export default function HomePage() {
 
               {role === "va" && (
                 <>
-                  <p className="text-muted-foreground leading-relaxed mb-4">
-                    I provide reliable and efficient virtual assistance services, helping businesses and professionals
-                    streamline their daily operations, manage communications, and maintain organized workflows remotely.
-                  </p>
-                  <p className="text-muted-foreground leading-relaxed">
-                    With strong organizational skills and a tech-forward mindset, I bring adaptability, attention to
-                    detail, and proactive support to every client engagement.
-                  </p>
+                  <p className="text-muted-foreground leading-relaxed mb-4">{home.vaIntro1}</p>
+                  <p className="text-muted-foreground leading-relaxed">{home.vaIntro2}</p>
                 </>
               )}
 
               {role === "admin-role" && (
                 <>
-                  <p className="text-muted-foreground leading-relaxed mb-4">
-                    I bring structured administrative expertise to organizations seeking efficient operations management.
-                    From coordinating cross-functional teams to developing standard operating procedures and tracking
-                    performance metrics.
-                  </p>
-                  <p className="text-muted-foreground leading-relaxed">
-                    My background in Computer Science combined with administrative experience equips me to bridge the
-                    gap between technical systems and organizational workflows.
-                  </p>
+                  <p className="text-muted-foreground leading-relaxed mb-4">{home.adminIntro1}</p>
+                  <p className="text-muted-foreground leading-relaxed">{home.adminIntro2}</p>
                 </>
               )}
             </div>

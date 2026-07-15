@@ -30,7 +30,11 @@ export interface HomeData {
   tagline: string;
   intro1: string;
   intro2: string;
-  profilePhotoUrl: string;
+  vaIntro1: string;
+  vaIntro2: string;
+  adminIntro1: string;
+  adminIntro2: string;
+  profilePhotoUrl: string | null;
   techSkills: TechSkills;
   vaSkills: SkillCategory[];
   adminRoleSkills: SkillCategory[];
@@ -96,6 +100,10 @@ export const defaultData: PortfolioData = {
       "I'm a graduate of Bachelor of Science in Computer Science and full-stack builder specializing in computer science systems, application networking infrastructure, and secure algorithmic pipelines.",
     intro2:
       "Passionate about solving complex problems, building clean user interfaces, and ensuring robust backend system communications.",
+    vaIntro1: "I provide reliable and efficient virtual assistance services.",
+    vaIntro2: "With strong organizational skills and a detail-oriented approach, I help streamline day-to-day operations.",
+    adminIntro1: "I bring structured administrative expertise to support smooth and efficient workflows.",
+    adminIntro2: "My background in Computer Science helps me combine process discipline with practical digital solutions.",
     profilePhotoUrl: "",
     techSkills: {
       software: ["MS Word", "MS Excel", "MS PowerPoint", "Cisco Packet Tracer", "Visual Studio Code", "Git"],
@@ -221,25 +229,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         // 3. Inject the live database data into your application state
         setDataState((prev) => ({
-          ...prev, 
-          // Overwrite local home data with cloud data!
-          home: pData ? {
-            name: pData.name,
-            tagline: pData.tagline,
-            intro1: pData.intro1,
-            intro2: pData.intro2,
-            profilePhotoUrl: pData.profile_photo_url,
-            techSkills: pData.tech_skills,
-            vaSkills: pData.va_skills,
-            adminRoleSkills: pData.admin_skills,
-          } : prev.home,
+          ...prev,
+          home: pData
+            ? {
+                ...prev.home,
+                name: pData.name,
+                tagline: pData.tagline,
+                intro1: pData.intro1,
+                intro2: pData.intro2,
+                vaIntro1: pData.va_intro1 || "I provide reliable and efficient virtual assistance services...",
+                vaIntro2: pData.va_intro2 || "With strong organizational skills...",
+                adminIntro1: pData.admin_intro1 || "I bring structured administrative expertise...",
+                adminIntro2: pData.admin_intro2 || "My background in Computer Science...",
+                profilePhotoUrl: pData.profile_photo_url,
+                techSkills: pData.tech_skills,
+                vaSkills: pData.va_skills,
+                adminRoleSkills: pData.admin_skills,
+              }
+            : prev.home,
           projects: { milestones, explorations },
-          services: { 
-            openToWork: openToWorkRes.data || [], 
-            servicesMenu: servicesMenuRes.data || [] 
+          services: {
+            openToWork: openToWorkRes.data || [],
+            servicesMenu: servicesMenuRes.data || [],
           },
-          contacts: { 
-            socialLinks: socialLinksRes.data || [] 
+          contacts: {
+            socialLinks: socialLinksRes.data || [],
           },
         }));
 
