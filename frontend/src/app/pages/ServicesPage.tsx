@@ -101,7 +101,7 @@ export default function ServicesPage() {
 
         {/* Open to Work */}
         <section className="mb-16">
-          <SectionHeader icon={<Briefcase size={14} />} label="OPEN TO WORK" />
+          <SectionHeader icon={<Briefcase size={14} />} label="Open to Opportunities" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {services.openToWork.length > 0 ? (
               services.openToWork.map((card) => <OpenToWorkCard key={card.id} card={card} />)
