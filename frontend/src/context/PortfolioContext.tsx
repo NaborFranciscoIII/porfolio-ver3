@@ -47,6 +47,7 @@ export interface Project {
   description: string;
   repoUrl: string;
   imageUrl?: string;
+  imageUrls: string[];
 }
 
 export interface ProjectsData {
@@ -132,6 +133,7 @@ export const defaultData: PortfolioData = {
           "A specialized data intelligence prototype engine designed for academic library tracking. Uses collaborative-filtering algorithms along with a dynamic user weighting balance ratio matrix to surface context-aware book suggestions.",
         repoUrl: "#",
         imageUrl: "",
+        imageUrls: [],
       },
     ],
     explorations: [
@@ -143,6 +145,7 @@ export const defaultData: PortfolioData = {
           "A responsive, offline-first personal finance platform engineered with React, TypeScript, Tauri, and Capacitor to deliver synchronized double-entry accounting frameworks across native Android and Windows Desktop platforms.",
         repoUrl: "#",
         imageUrl: "",
+        imageUrls: [],
       },
     ],
   },
@@ -218,11 +221,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const allProjects = projectsRes.data || [];
         const milestones = allProjects
           .filter((p) => p.category === "milestone")
-          .map((p) => ({ id: p.id, title: p.title, tags: p.tags, description: p.description, repoUrl: p.repo_url, imageUrl: p.image_url }));
+          .map((p) => ({
+            id: p.id,
+            title: p.title,
+            tags: p.tags,
+            description: p.description,
+            repoUrl: p.repo_url,
+            imageUrl: p.image_url,
+            imageUrls: p.image_urls || [],
+          }));
 
         const explorations = allProjects
           .filter((p) => p.category === "exploration")
-          .map((p) => ({ id: p.id, title: p.title, tags: p.tags, description: p.description, repoUrl: p.repo_url, imageUrl: p.image_url }));
+          .map((p) => ({
+            id: p.id,
+            title: p.title,
+            tags: p.tags,
+            description: p.description,
+            repoUrl: p.repo_url,
+            imageUrl: p.image_url,
+            imageUrls: p.image_urls || [],
+          }));
 
         // Safely extract profile data if it exists
         const pData = profileRes.data?.[0];

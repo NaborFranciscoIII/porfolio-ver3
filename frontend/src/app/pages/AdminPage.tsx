@@ -479,36 +479,44 @@ function HomeTab() {
 
 function emptyProject(): Project {
   // We use a "temp_" prefix so our save function knows this is a brand new entry!
-  return { id: `temp_${Date.now()}`, title: "", tags: [], description: "", repoUrl: "", imageUrl: "" };
+  return { id: `temp_${Date.now()}`, title: "", tags: [], description: "", repoUrl: "", imageUrl: "", imageUrls: [] };
 }
 
 function ProjectForm({ project, onChange, onRemove }: { project: Project; onChange: (p: Project) => void; onRemove: () => void }) {
-  // Add a localized loading state just for this specific project's image upload
   const [uploading, setUploading] = useState(false);
 
-  const handleImageUpload = async (file: File) => {
+  const handleMediaUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `project-${Date.now()}.${fileExt}`;
+      const uploadedUrls = await Promise.all(
+        Array.from(files).map(async (file) => {
+          const fileExt = file.name.split('.').pop() || "bin";
+          const fileName = `project-${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
 
-      // Upload directly to your Supabase bucket
-      const { error: uploadError } = await supabase.storage
-        .from('portfolio-images')
-        .upload(fileName, file);
+          const { error: uploadError } = await supabase.storage
+            .from("portfolio-images")
+            .upload(fileName, file);
 
-      if (uploadError) throw uploadError;
+          if (uploadError) throw uploadError;
 
-      // Ask Supabase for the new Public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('portfolio-images')
-        .getPublicUrl(fileName);
+          const { data: publicUrlData } = supabase.storage
+            .from("portfolio-images")
+            .getPublicUrl(fileName);
 
-      // Update the project's imageUrl with the new live link
-      onChange({ ...project, imageUrl: publicUrlData.publicUrl });
+          return publicUrlData.publicUrl;
+        })
+      );
+
+      onChange({
+        ...project,
+        imageUrls: [...(project.imageUrls || []), ...uploadedUrls],
+        imageUrl: uploadedUrls[0] || project.imageUrl,
+      });
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Failed to upload project image.");
+      alert("Failed to upload project media.");
     } finally {
       setUploading(false);
     }
@@ -527,32 +535,36 @@ function ProjectForm({ project, onChange, onRemove }: { project: Project; onChan
         <TextInput value={project.title} onChange={(v) => onChange({ ...project, title: v })} placeholder="Project title" />
       </div>
       
-      {/* ─── NEW: File Uploader instead of Text URL ─── */}
       <div>
-        <FieldLabel>Project Image</FieldLabel>
-        <div className="flex items-center gap-4 mt-1">
-          {project.imageUrl ? (
-            <img src={project.imageUrl} alt="Project" className="w-16 h-12 rounded-md object-cover border border-border shadow-sm" />
-          ) : (
-            <div className="w-16 h-12 rounded-md bg-muted flex items-center justify-center text-[10px] uppercase tracking-wider text-muted-foreground border border-border shadow-sm">No Image</div>
-          )}
-          <div className="flex-1">
-            <input
-              type="file"
-              accept="image/*"
-              disabled={uploading}
-              onChange={(e) => {
-                if (e.target.files && e.target.files.length > 0) {
-                  handleImageUpload(e.target.files[0]);
-                }
-              }}
-              className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all cursor-pointer disabled:opacity-50"
-            />
-            {uploading && <p className="text-xs text-primary mt-1 animate-pulse">Uploading to bucket...</p>}
+        <FieldLabel>Project Media Attachments</FieldLabel>
+        <p className="text-[10px] text-muted-foreground mb-2">Upload image or gif files to feature in the carousel.</p>
+        <input
+          type="file"
+          accept="image/*,.gif"
+          multiple
+          disabled={uploading}
+          onChange={(e) => handleMediaUpload(e.target.files)}
+          className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all cursor-pointer disabled:opacity-50"
+        />
+        {uploading && <p className="text-xs text-primary mt-1 animate-pulse">Uploading attachments...</p>}
+
+        {project.imageUrls && project.imageUrls.length > 0 && (
+          <div className="mt-3 flex flex-col gap-2">
+            {project.imageUrls.map((url, i) => (
+              <div key={`${url}-${i}`} className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg border border-border">
+                <img src={url} alt={`Project media ${i + 1}`} className="w-14 h-10 rounded-md object-cover border border-border" />
+                <span className="text-xs text-foreground flex-1 truncate">{url}</span>
+                <button
+                  onClick={() => onChange({ ...project, imageUrls: (project.imageUrls || []).filter((_, idx) => idx !== i) })}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
-      {/* ────────────────────────────────────────────── */}
 
       <div>
         <FieldLabel>Tags</FieldLabel>
@@ -600,6 +612,7 @@ function ProjectsTab() {
           tags: p.tags,
           repo_url: p.repoUrl,
           image_url: p.imageUrl,
+          image_urls: p.imageUrls,
           category: p.category
         };
 
@@ -618,11 +631,11 @@ function ProjectsTab() {
       if (freshProjects) {
         const milestones = freshProjects
           .filter((p) => p.category === "milestone")
-          .map((p) => ({ id: p.id, title: p.title, tags: p.tags, description: p.description, repoUrl: p.repo_url, imageUrl: p.image_url }));
+          .map((p) => ({ id: p.id, title: p.title, tags: p.tags, description: p.description, repoUrl: p.repo_url, imageUrl: p.image_url, imageUrls: p.image_urls || [] }));
 
         const explorations = freshProjects
           .filter((p) => p.category === "exploration")
-          .map((p) => ({ id: p.id, title: p.title, tags: p.tags, description: p.description, repoUrl: p.repo_url, imageUrl: p.image_url }));
+          .map((p) => ({ id: p.id, title: p.title, tags: p.tags, description: p.description, repoUrl: p.repo_url, imageUrl: p.image_url, imageUrls: p.image_urls || [] }));
 
         // Update the global state so the public portfolio updates instantly
         setData({ ...data, projects: { milestones, explorations } });

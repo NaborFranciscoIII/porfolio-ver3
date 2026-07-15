@@ -1,5 +1,5 @@
 import { useApp, Project } from "@/context/PortfolioContext";
-import { Github } from "lucide-react";
+import { FolderGit2, Github } from "lucide-react";
 
 // ─── Reusable Project Card Component ──────────────────────────────────────────
 function ProjectCard({ project }: { project: Project }) {
@@ -22,6 +22,34 @@ function ProjectCard({ project }: { project: Project }) {
       <p className="text-sm text-muted-foreground leading-relaxed flex-1 mb-6">
         {project.description}
       </p>
+
+      {/* 4. The Media Display (Dynamic Carousel) */}
+      <div className="w-full mt-1 mb-5">
+        {project.imageUrls && project.imageUrls.length > 0 ? (
+          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar">
+            {project.imageUrls.map((url, idx) => (
+              <div
+                key={`${project.id}-${idx}`}
+                className="w-full sm:w-[85%] flex-shrink-0 snap-center p-2 bg-muted/20 border border-border rounded-3xl backdrop-blur-sm group-hover:border-primary/40 transition-colors duration-300"
+              >
+                <img
+                  src={url}
+                  alt={`${project.title} screenshot ${idx + 1}`}
+                  className="w-full h-48 md:h-64 object-cover rounded-2xl shadow-lg"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="w-full h-48 md:h-64 bg-muted/10 border-2 border-dashed border-border rounded-3xl flex flex-col items-center justify-center text-muted-foreground backdrop-blur-sm">
+            <FolderGit2 size={40} className="mb-3 opacity-30" />
+            <span className="font-mono text-xs tracking-widest uppercase opacity-50">Media Pending</span>
+          </div>
+        )}
+      </div>
 
       {/* Repository Link */}
       {project.repoUrl && project.repoUrl !== "#" && (
