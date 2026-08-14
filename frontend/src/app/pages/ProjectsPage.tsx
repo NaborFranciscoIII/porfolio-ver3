@@ -1,16 +1,33 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useApp, Project } from "@/context/PortfolioContext";
-import { Github, ImageIcon, X, ZoomIn } from "lucide-react";
+import { Github, ImageIcon, X, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 
 // ─── Interactive Node Component ───────────────────────────────────────────────
-function ProjectNode({ project, index, onImageClick }: { project: Project; index: number; onImageClick: (url: string) => void }) {
+function ProjectNode({ 
+  project, 
+  index, 
+  onImageClick 
+}: { 
+  project: Project; 
+  index: number; 
+  onImageClick: (urls: string[], startIndex: number) => void 
+}) {
   const [showMedia, setShowMedia] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   
   const isEven = index % 2 === 0;
   const hasMedia = project.imageUrls && project.imageUrls.length > 0;
 
+  // Filmstrip Scroll Handler for Desktop
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = direction === 'left' ? -350 : 350;
+      scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className={`relative flex flex-col md:flex-row ${isEven ? '' : 'md:flex-row-reverse'} items-center justify-between w-full my-16 md:my-24 group`}>
+    <div className={`relative flex flex-col md:flex-row ${isEven ? '' : 'md:flex-row-reverse'} items-center justify-between w-full my-16 md:my-24 group/node`}>
       
       {/* The Central Node Dot (Desktop Only) */}
       <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-background border-2 border-primary rounded-full z-10 shadow-[0_0_15px_var(--glow)]" />
@@ -70,32 +87,50 @@ function ProjectNode({ project, index, onImageClick }: { project: Project; index
         </div>
       </div>
 
-      {/* The Media Display */}
+      {/* The Media Display (Filmstrip) */}
       <div className={`w-full md:w-[45%] mt-8 md:mt-0 z-10 transition-all duration-500 origin-center ${showMedia ? 'opacity-100 scale-100' : 'opacity-0 scale-95 hidden md:block md:pointer-events-none'}`}>
         {showMedia && (
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar scroll-smooth">
-            {project.imageUrls.map((url, idx) => (
-              <div 
-                key={idx} 
-                className="relative w-full sm:w-[90%] h-56 md:h-72 flex-shrink-0 snap-center rounded-2xl overflow-hidden cursor-pointer group/img border border-border/20 bg-muted/5 shadow-md hover:shadow-xl transition-all duration-300"
-                onClick={() => onImageClick(url)}
-              >
-                {/* Changed to object-contain to prevent awkward cropping */}
-                <img
-                  src={url}
-                  alt={`${project.title} media ${idx + 1}`}
-                  className="w-full h-full object-contain group-hover/img:scale-[1.02] transition-transform duration-500"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-                
-                {/* Zoom Hover Overlay */}
-                <div className="absolute inset-0 bg-background/0 group-hover/img:bg-background/20 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover/img:opacity-100">
-                  <div className="bg-background/80 text-foreground p-3 rounded-full backdrop-blur-sm shadow-lg border border-border/50">
-                    <ZoomIn size={20} />
+          <div className="relative group/carousel">
+            
+            {/* Desktop Left Arrow */}
+            {project.imageUrls.length > 1 && (
+              <button onClick={() => scroll('left')} className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-background/90 text-foreground p-2 rounded-full shadow-lg border border-border/50 opacity-0 group-hover/carousel:opacity-100 transition-opacity hidden md:flex hover:bg-card hover:scale-110">
+                <ChevronLeft size={20} />
+              </button>
+            )}
+
+            {/* Scrollable Container with touch-pan-x for mobile */}
+            <div ref={scrollRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar scroll-smooth touch-pan-x">
+              {project.imageUrls.map((url, idx) => (
+                <div 
+                  key={idx} 
+                  className="relative w-[90%] sm:w-[80%] md:w-full h-56 md:h-72 flex-shrink-0 snap-center rounded-2xl overflow-hidden cursor-pointer group/img border border-border/20 bg-muted/5 shadow-md hover:shadow-xl transition-all duration-300"
+                  onClick={() => onImageClick(project.imageUrls, idx)}
+                >
+                  <img
+                    src={url}
+                    alt={`${project.title} media ${idx + 1}`}
+                    className="w-full h-full object-contain group-hover/img:scale-[1.02] transition-transform duration-500"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  
+                  {/* Zoom Hover Overlay */}
+                  <div className="absolute inset-0 bg-background/0 group-hover/img:bg-background/20 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover/img:opacity-100">
+                    <div className="bg-background/80 text-foreground p-3 rounded-full backdrop-blur-sm shadow-lg border border-border/50">
+                      <ZoomIn size={20} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Desktop Right Arrow */}
+            {project.imageUrls.length > 1 && (
+              <button onClick={() => scroll('right')} className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 bg-background/90 text-foreground p-2 rounded-full shadow-lg border border-border/50 opacity-0 group-hover/carousel:opacity-100 transition-opacity hidden md:flex hover:bg-card hover:scale-110">
+                <ChevronRight size={20} />
+              </button>
+            )}
+
           </div>
         )}
       </div>
@@ -108,11 +143,27 @@ export default function ProjectsPage() {
   const { data } = useApp();
   const { milestones, explorations } = data.projects;
   
-  // State for the full-screen lightbox
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // Advanced Lightbox State (Tracks the array of images AND current index)
+  const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
+
+  // Lightbox Navigation Functions
+  const nextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lightbox) {
+      setLightbox({ ...lightbox, index: (lightbox.index + 1) % lightbox.urls.length });
+    }
+  };
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lightbox) {
+      setLightbox({ ...lightbox, index: (lightbox.index - 1 + lightbox.urls.length) % lightbox.urls.length });
+    }
+  };
 
   return (
-    <div className="pt-24 pb-16 min-h-screen overflow-x-hidden relative">
+    // Removed 'overflow-x-hidden' to ensure global Navbar isn't swallowed
+    <div className="pt-24 pb-16 min-h-screen">
       
       {/* Grid background */}
       <div
@@ -137,7 +188,7 @@ export default function ProjectsPage() {
 
         {/* Milestones Section */}
         {milestones.length > 0 && (
-          <section className="mb-24 md:mb-32 relative">
+          <section className="mb-24 md:mb-32">
             <div className="flex items-center gap-4 mb-8 md:mb-16">
               <h2 className="text-xl md:text-2xl font-semibold tracking-wide">Academic Milestones</h2>
               <div className="flex-1 border-t border-dashed border-border" />
@@ -145,7 +196,7 @@ export default function ProjectsPage() {
             
             <div className="flex flex-col">
               {milestones.map((project, index) => (
-                <ProjectNode key={project.id} project={project} index={index} onImageClick={setSelectedImage} />
+                <ProjectNode key={project.id} project={project} index={index} onImageClick={(urls, idx) => setLightbox({ urls, index: idx })} />
               ))}
             </div>
           </section>
@@ -153,7 +204,7 @@ export default function ProjectsPage() {
 
         {/* Explorations Section */}
         {explorations.length > 0 && (
-          <section className="relative">
+          <section>
             <div className="flex items-center gap-4 mb-8 md:mb-16">
               <h2 className="text-xl md:text-2xl font-semibold tracking-wide">Personal Explorations</h2>
               <div className="flex-1 border-t border-dashed border-border" />
@@ -161,32 +212,61 @@ export default function ProjectsPage() {
             
             <div className="flex flex-col">
               {explorations.map((project, index) => (
-                <ProjectNode key={project.id} project={project} index={index} onImageClick={setSelectedImage} />
+                <ProjectNode key={project.id} project={project} index={index} onImageClick={(urls, idx) => setLightbox({ urls, index: idx })} />
               ))}
             </div>
           </section>
         )}
       </div>
 
-      {/* ─── Full-Screen Image Lightbox Modal ─── */}
-      {selectedImage && (
+      {/* ─── Full-Screen Image Lightbox Modal with Navigation ─── */}
+      {lightbox && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/90 backdrop-blur-sm p-4 sm:p-8 animate-in fade-in duration-200"
-          onClick={() => setSelectedImage(null)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-md p-4 sm:p-8 animate-in fade-in duration-200"
+          onClick={() => setLightbox(null)}
         >
+          {/* Close Button */}
           <button 
-            className="absolute top-4 right-4 sm:top-8 sm:right-8 text-muted-foreground hover:text-foreground bg-card/50 hover:bg-card p-3 rounded-full transition-all border border-border/50 shadow-lg z-10"
-            onClick={() => setSelectedImage(null)}
+            className="absolute top-4 right-4 sm:top-8 sm:right-8 text-muted-foreground hover:text-foreground bg-card/50 hover:bg-card p-3 rounded-full transition-all border border-border/50 shadow-lg z-[110]"
+            onClick={() => setLightbox(null)}
           >
             <X size={24} />
           </button>
           
+          {/* Previous Arrow */}
+          {lightbox.urls.length > 1 && (
+            <button 
+              className="absolute left-2 sm:left-8 text-muted-foreground hover:text-foreground bg-card/50 hover:bg-card p-3 rounded-full transition-all border border-border/50 shadow-lg z-[110]"
+              onClick={prevImage}
+            >
+              <ChevronLeft size={32} />
+            </button>
+          )}
+
+          {/* The Image */}
           <img
-            src={selectedImage}
-            alt="Expanded view"
-            className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
-            onClick={(e) => e.stopPropagation()} // Prevents clicking the image from closing the modal
+            src={lightbox.urls[lightbox.index]}
+            alt={`Expanded view ${lightbox.index + 1}`}
+            className="max-w-full max-h-full object-contain rounded-xl shadow-2xl px-12"
+            onClick={(e) => e.stopPropagation()} 
           />
+
+          {/* Next Arrow */}
+          {lightbox.urls.length > 1 && (
+            <button 
+              className="absolute right-2 sm:right-8 text-muted-foreground hover:text-foreground bg-card/50 hover:bg-card p-3 rounded-full transition-all border border-border/50 shadow-lg z-[110]"
+              onClick={nextImage}
+            >
+              <ChevronRight size={32} />
+            </button>
+          )}
+          
+          {/* Image Counter */}
+          {lightbox.urls.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-background/80 text-foreground px-4 py-1.5 rounded-full text-sm font-mono border border-border/50 backdrop-blur-sm shadow-md">
+              {lightbox.index + 1} / {lightbox.urls.length}
+            </div>
+          )}
         </div>
       )}
     </div>
